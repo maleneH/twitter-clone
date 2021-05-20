@@ -6,7 +6,9 @@ import dk.cphbusiness.mrv.twitterclone.dto.UserOverview;
 import dk.cphbusiness.mrv.twitterclone.dto.UserUpdate;
 import dk.cphbusiness.mrv.twitterclone.util.Time;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,22 +23,61 @@ public class UserManagementImpl implements UserManagement {
 
     @Override
     public boolean createUser(UserCreation userCreation) {
-        throw new UnsupportedOperationException("Not yet implemented");
+
+        if (jedis.sismember("users", userCreation.username))
+            return false;
+        else {
+            try (Transaction transaction = jedis.multi()){
+
+                transaction.sadd("users", userCreation.username);
+                var map = Map.of("firstname", userCreation.firstname,
+                        "lastname", userCreation.lastname,
+                        "passwordHash", userCreation.passwordHash,
+                        "birthday", userCreation.birthday);
+
+                transaction.hmset("user:"+userCreation.username, map);
+
+                transaction.exec();
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
     }
+
 
     @Override
     public UserOverview getUserOverview(String username) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!jedis.exists("user:"+username)) {
+            return null;
+        } else {
+        var user = jedis.hmget("user:"+username, "firstname", "lastname");
+
+        UserOverview userOverview = new UserOverview(
+                username,
+                user.get(0),
+                user.get(1),
+                0,
+                0);
+
+        return userOverview;
+    }
     }
 
     @Override
     public boolean updateUser(UserUpdate userUpdate) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return false;
     }
 
     @Override
     public boolean followUser(String username, String usernameToFollow) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!jedis.exists(username) || !jedis.exists(usernameToFollow)){
+            return false;
+        } else {
+            jedis.set(username+".follows", usernameToFollow);
+            return true;
+        }
     }
 
     @Override

@@ -25,7 +25,11 @@ public class CreateUserIT extends TestBase {
     public void userMustExistWhenCreated(){
         // Arrange
         var user = getAlbert();
+        var user2 = getBenny();
         um.createUser(user);
+        //useroverview object requires the user to have followers and to follow
+        um.followUser(user.username, user2.username);
+        um.followUser(user2.username, user.username);
 
         // Act
         var userOverview = um.getUserOverview(user.username);

@@ -48,6 +48,7 @@ public class TestBase {
         */
         setupContainer();
 
+
         jedis = new Jedis(host, port);
         jedis.select(9);
         time = new TimeFake();
@@ -55,7 +56,7 @@ public class TestBase {
         um = new UserManagementImpl(jedis);
         pm = new PostManagementImpl(jedis, time);
 
-        throw new RuntimeException("Read the warning above");
+        //throw new RuntimeException("Read the warning above");
     }
 
     @BeforeEach
