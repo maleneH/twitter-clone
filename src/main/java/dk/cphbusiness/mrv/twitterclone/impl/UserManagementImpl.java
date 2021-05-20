@@ -30,12 +30,12 @@ public class UserManagementImpl implements UserManagement {
             try (Transaction transaction = jedis.multi()){
 
                 transaction.sadd("users", userCreation.username);
-                var map = Map.of("firstname", userCreation.firstname,
+                var details = Map.of("firstname", userCreation.firstname,
                         "lastname", userCreation.lastname,
                         "passwordHash", userCreation.passwordHash,
                         "birthday", userCreation.birthday);
 
-                transaction.hmset("user:"+userCreation.username, map);
+                transaction.hmset("user:"+userCreation.username, details);
 
                 transaction.exec();
                 return true;
@@ -67,7 +67,18 @@ public class UserManagementImpl implements UserManagement {
 
     @Override
     public boolean updateUser(UserUpdate userUpdate) {
-        return false;
+        if (!jedis.exists("user:"+userUpdate.username))
+            return false;
+
+        if (userUpdate.firstname != null)
+            jedis.hset("user:"+userUpdate.username,"firstname", userUpdate.firstname);
+        if (userUpdate.lastname != null)
+            jedis.hset("user:"+userUpdate.username,"lastname", userUpdate.lastname);
+        if (userUpdate.birthday != null)
+            jedis.hset("user:"+userUpdate.username,"birthday", userUpdate.birthday);
+
+        return true;
+
     }
 
     @Override
