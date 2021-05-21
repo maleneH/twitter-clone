@@ -53,13 +53,15 @@ public class UserManagementImpl implements UserManagement {
             return null;
         } else {
         var user = jedis.hmget("user:"+username, "firstname", "lastname");
+        var numFollowers = jedis.smembers("followers:"+username).size();
+        var numFollowing = jedis.smembers("following:"+username).size();
 
         UserOverview userOverview = new UserOverview(
                 username,
                 user.get(0),
                 user.get(1),
-                0,
-                0);
+                numFollowers,
+                numFollowing);
 
         return userOverview;
     }
@@ -109,7 +111,7 @@ public class UserManagementImpl implements UserManagement {
     @Override
     public Set<String> getFollowedUsers(String username) {
         if (jedis.exists("user:"+username)) {
-            var followedUsers = jedis.smembers("followers:" + username);
+            var followedUsers = jedis.smembers("following:" + username);
             return followedUsers;
         }else{
             return null;
