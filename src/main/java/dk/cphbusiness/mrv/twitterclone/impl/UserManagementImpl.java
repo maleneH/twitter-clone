@@ -67,29 +67,29 @@ public class UserManagementImpl implements UserManagement {
 
     @Override
     public boolean updateUser(UserUpdate userUpdate) {
-        if (!jedis.exists("user:"+userUpdate.username))
+        if (!jedis.exists("user:"+userUpdate.username)) {
             return false;
+        }
+        else {
+            if (userUpdate.firstname != null)
+                jedis.hset("user:" + userUpdate.username, "firstname", userUpdate.firstname);
+            if (userUpdate.lastname != null)
+                jedis.hset("user:" + userUpdate.username, "lastname", userUpdate.lastname);
+            if (userUpdate.birthday != null)
+                jedis.hset("user:" + userUpdate.username, "birthday", userUpdate.birthday);
 
-        if (userUpdate.firstname != null)
-            jedis.hset("user:"+userUpdate.username,"firstname", userUpdate.firstname);
-        if (userUpdate.lastname != null)
-            jedis.hset("user:"+userUpdate.username,"lastname", userUpdate.lastname);
-        if (userUpdate.birthday != null)
-            jedis.hset("user:"+userUpdate.username,"birthday", userUpdate.birthday);
-
-        return true;
-
+            return true;
+        }
     }
 
     @Override
     public boolean followUser(String username, String usernameToFollow) {
-        if (!jedis.exists(username) || !jedis.exists(usernameToFollow)){
-            return false;
-        } else {
-            jedis.set(username+".follows", usernameToFollow);
+            jedis.sadd("following:"+username, usernameToFollow);
+            jedis.sadd("followers:"+usernameToFollow, username);
+
             return true;
         }
-    }
+
 
     @Override
     public boolean unfollowUser(String username, String usernameToUnfollow) {
@@ -98,12 +98,23 @@ public class UserManagementImpl implements UserManagement {
 
     @Override
     public Set<String> getFollowedUsers(String username) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (jedis.exists(username)) {
+            var followedUsers = jedis.smembers("followers:" + username);
+            return followedUsers;
+        }else{
+            return null;
+        }
+
     }
 
     @Override
     public Set<String> getUsersFollowing(String username) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (jedis.exists(username)) {
+            var followingUsers = jedis.smembers("followers:" + username);
+            return followingUsers;
+        }else{
+            return null;
+        }
     }
 
 }

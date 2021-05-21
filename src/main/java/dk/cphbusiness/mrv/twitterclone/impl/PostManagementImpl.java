@@ -4,6 +4,7 @@ import dk.cphbusiness.mrv.twitterclone.contract.PostManagement;
 import dk.cphbusiness.mrv.twitterclone.dto.Post;
 import dk.cphbusiness.mrv.twitterclone.util.Time;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 import redis.clients.jedis.Tuple;
 
 import java.util.ArrayList;
@@ -22,16 +23,39 @@ public class PostManagementImpl implements PostManagement {
 
     @Override
     public boolean createPost(String username, String message) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!jedis.sismember("users", username)) {return false;}
+        else {
+            try (Transaction transaction = jedis.multi()) {
+                long ts = time.getCurrentTimeMillis();
+                transaction.sadd("posts:" + username, message);
+                transaction.hset("post:" + username, String.valueOf(ts), message);
+                transaction.exec();
+                return true;
+            }
+        }
     }
 
     @Override
     public List<Post> getPosts(String username) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        var messages = jedis.hgetAll("post:"+username);
+        List<Post> posts = new ArrayList<>();
+        for (String tm : messages.keySet())
+        {
+            posts.add(new Post(Long.parseLong(tm), messages.get(tm)));
+        }
+        return posts;
     }
 
     @Override
     public List<Post> getPostsBetween(String username, long timeFrom, long timeTo) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        var messages = jedis.hgetAll("post:"+username);
+        List<Post> posts = new ArrayList<>();
+        for (String tm : messages.keySet())
+        {
+            if (Long.parseLong(tm) >= timeFrom && Long.parseLong(tm) <= timeTo) {
+                posts.add(new Post(Long.parseLong(tm), messages.get(tm)));
+            }
+        }
+        return posts;
     }
 }
