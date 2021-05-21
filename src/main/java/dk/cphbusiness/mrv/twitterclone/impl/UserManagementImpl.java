@@ -84,21 +84,31 @@ public class UserManagementImpl implements UserManagement {
 
     @Override
     public boolean followUser(String username, String usernameToFollow) {
-            jedis.sadd("following:"+username, usernameToFollow);
-            jedis.sadd("followers:"+usernameToFollow, username);
+        if (!jedis.exists("user:" + username) || !jedis.exists("user:" + usernameToFollow)){
+            return false;
+        } else {
+            jedis.sadd("following:" + username, usernameToFollow);
+            jedis.sadd("followers:" + usernameToFollow, username);
 
             return true;
         }
 
+    }
 
     @Override
     public boolean unfollowUser(String username, String usernameToUnfollow) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!jedis.exists("user:" + username) || !jedis.exists("user:" + usernameToUnfollow)) {
+            return false;
+        }else{
+            jedis.srem("following:"+username, usernameToUnfollow);
+            jedis.srem("followers:"+usernameToUnfollow, username);
+            return true;
+        }
     }
 
     @Override
     public Set<String> getFollowedUsers(String username) {
-        if (jedis.exists(username)) {
+        if (jedis.exists("user:"+username)) {
             var followedUsers = jedis.smembers("followers:" + username);
             return followedUsers;
         }else{
@@ -109,7 +119,7 @@ public class UserManagementImpl implements UserManagement {
 
     @Override
     public Set<String> getUsersFollowing(String username) {
-        if (jedis.exists(username)) {
+        if (jedis.exists("user:"+username)) {
             var followingUsers = jedis.smembers("followers:" + username);
             return followingUsers;
         }else{
